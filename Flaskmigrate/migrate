@@ -1,0 +1,6 @@
+migrations/
+    versions/
+        1234abcd_add_users_table.py
+        5678efgh_modify_role_column.py
+    env.py
+    script.py.mako

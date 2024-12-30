@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
 from werkzeug.utils import secure_filename
@@ -24,11 +24,12 @@ db = SQLAlchemy(app)
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)  # Initialize Migrate with app and db
 
-# Define the Aggregator model (table)
-class Aggregator(db.Model):
-    __tablename__ = 'aggregator'  # Explicitly define the table name
+# Define the Applicants model (table)
+class Applicants(db.Model):
+    __tablename__ = 'applicants'  # Updated table name
 
     id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(100), nullable=False)  # Added role/job field
     state = db.Column(db.String(100), nullable=False)
     lga = db.Column(db.String(100), nullable=False)
     ward = db.Column(db.String(100), nullable=False)
@@ -41,7 +42,7 @@ class Aggregator(db.Model):
     cover_letter_file = db.Column(db.String(200), nullable=False)
 
     def __repr__(self):
-        return f'<Aggregator {self.name}>'
+        return f'<Applicants {self.name}>'
 
 # Route to display the form
 @app.route('/')
@@ -53,6 +54,7 @@ def index():
 @app.route('/submit', methods=['POST'])
 def submit():
     # Get data from the form
+    role = request.form.get('role')  # Added role/job selection
     state = request.form.get('state')
     lga = request.form.get('lga')
     ward = request.form.get('ward')
@@ -79,21 +81,40 @@ def submit():
     cv_filename = secure_filename(cv_file.filename)
     cover_letter_filename = secure_filename(cover_letter_file.filename)
 
-    cv_path = os.path.join(app.config['UPLOAD_FOLDER'], cv_filename)
-    cover_letter_path = os.path.join(app.config['UPLOAD_FOLDER'], cover_letter_filename)
+    # Create folder structure
+    role_folder = os.path.join(app.config['UPLOAD_FOLDER'], role)
+    state_folder = os.path.join(role_folder, state)
+    applicant_folder = os.path.join(state_folder, name)
+
+    # Check if the role folder exists, if not create it
+    if not os.path.exists(role_folder):
+        os.makedirs(role_folder)
+    
+    # Check if the state folder exists, if not create it
+    if not os.path.exists(state_folder):
+        os.makedirs(state_folder)
+    
+    # Check if the applicant's folder exists, if not create it
+    if not os.path.exists(applicant_folder):
+        os.makedirs(applicant_folder)
+
+    # Paths for saving the files
+    cv_path = os.path.join(applicant_folder, cv_filename)
+    cover_letter_path = os.path.join(applicant_folder, cover_letter_filename)
 
     # Save files to the server (uploads folder)
     cv_file.save(cv_path)
     cover_letter_file.save(cover_letter_path)
 
     # Check if the phone number or email already exists
-    existing_applicant = Aggregator.query.filter((Aggregator.phone == full_phone) | (Aggregator.email == email)).first()
+    existing_applicant = Applicants.query.filter((Applicants.phone == full_phone) | (Applicants.email == email)).first()
     if existing_applicant:
         flash("You have already applied for this role! Thank you!.", "danger")
         return redirect(url_for('index', already_applied=True))
 
     # Create new applicant and save to the database
-    new_applicant = Aggregator(
+    new_applicant = Applicants(
+        role=role,  # Added role/job field
         state=state,
         lga=lga,
         ward=ward,
@@ -114,26 +135,6 @@ def submit():
     # Redirect to the home page with success message
     return redirect(url_for('index', success=True))
 
-# API route to get applicants data
-@app.route('/api/applicants', methods=['GET'])
-def get_applicants():
-    applicants = Aggregator.query.all()  # Fetch all applicants
-    applicants_list = []
-    for applicant in applicants:
-        applicants_list.append({
-            'id': applicant.id,
-            'state': applicant.state,
-            'lga': applicant.lga,
-            'ward': applicant.ward,
-            'name': applicant.name,
-            'phone': applicant.phone,
-            'email': applicant.email,
-            'address': applicant.address,
-            'occupation': applicant.occupation,
-            'cv_file': applicant.cv_file,
-            'cover_letter_file': applicant.cover_letter_file
-        })
-    return jsonify(applicants_list)  # Return data as JSON
 
 # Helper function to check allowed file types
 def allowed_file(filename):

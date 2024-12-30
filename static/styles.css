@@ -118,3 +118,20 @@ ul {
 ul li {
     margin: 10px 0;
 }
+
+/* Style for success message */
+.success-message {
+    color: green;
+    font-weight: bold;
+    font-size: 16px;
+    background-color: #e6f9e6; /* Optional: light green background */
+    padding: 10px;
+    border-radius: 5px; /* Optional: rounded corners */
+    border: 1px solid #b3d7b3; /* Optional: green border */
+}
+
+error-message {
+    color: red;
+    font-weight: bold;
+    font-size: 16px;
+}
