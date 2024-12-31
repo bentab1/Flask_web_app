@@ -12,7 +12,7 @@ import os
 
 # Adjust DATABASE_URL for PythonAnywhere deployment
 # Configure the database URI (MySQL example)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'mysql+pymysql://root:Ubmc1987#$@127.0.0.1/paycare')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL','postgresql://postgres:Ubmc1987#$@127.0.0.1/paycare')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Setup folder to save CV and Cover Letter
