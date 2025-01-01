@@ -7,7 +7,6 @@ from flask_migrate import Migrate  # Import Migrate
 
 # Initialize Flask app
 app = Flask(__name__)
-server= app.server
 load_dotenv()  # Load environment variables from .env file
 # Setup the PostgreSQL database URI
 import os
