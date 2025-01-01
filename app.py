@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from flask_migrate import Migrate  # Import Migrate
@@ -7,20 +8,17 @@ from flask_migrate import Migrate  # Import Migrate
 # Initialize Flask app
 app = Flask(__name__)
 
-# Setup the PostgreSQL database URI
-import os
+# Load environment variables from .env file (For local dev use)
+load_dotenv()
 
-# Adjust DATABASE_URL for PythonAnywhere deployment
-# Configure the database URI (MySQL example)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL','postgresql://postgres:Ubmc1987#$@127.0.0.1/paycare')
+# Configure the PostgreSQL database URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Setup folder to save CV and Cover Letter
 app.config['UPLOAD_FOLDER'] = 'C:/Users/benja/pythonvenv/Flask_web_app/Files/'
 app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}
-
-# Secret key for session management (flash messages)
 app.secret_key = 'your_secret_key'  # You can use any secret key
+
+# Use the Heroku DATABASE_URL environment variable for production
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 
 # Initialize the database
 db = SQLAlchemy(app)
@@ -138,7 +136,6 @@ def submit():
     flash("Your application has been submitted successfully!", "success")
     # Redirect to the home page with success message
     return redirect(url_for('index', success=True))
-
 
 # Helper function to check allowed file types
 def allowed_file(filename):
