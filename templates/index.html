@@ -9,9 +9,10 @@
 <body>
   <div class="form-container">
     <h1>Applicant Submission Form</h1>
-    <h2>Application Instructions</h2>
+    <h3>Follow the Instructions, Please!!</h3>
     <h5>Note: Please make sure you select the exact role/job advertised and follow all the job description instructions.</h5>
     <p>If you encounter any problems with the application, contact us at <a href="mailto:info@paycaretech.world">info@paycaretech.world</a>.</p>
+    
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -23,30 +24,22 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Display success message if 'success' parameter exists -->
-    <!-- {% if success %}
-      <div class="success-message">
-        <p>Your application has been submitted successfully!</p>
-      </div>
-    {% endif %} -->
-
     <!-- Hide form if application is successful or already applied -->
     {% if not success and not already_applied %}
-    <form id="applicantForm" action="/submit" method="POST" enctype="multipart/form-data">
+    <form id="toggleStatusForm" action="{{ url_for('submit') }}" method="POST">
       <label for="role">Select the role/job you are applying for:</label>
       <select id="role" name="role" required>
-        <option value="" disabled selected>Select role/job</option>
-        <option value="Aggregator">Aggregator</option>
-        <option value="Agent">Agent</option>
-        <option value="Sales">Sales</option>
-        <option value="Customer Care">Customer Care</option>
-        <option value="Finance">Finance</option>
+          <option value="" disabled selected>Select role/job</option>
+          {% for role in active_roles %}
+              <option value="{{ role }}">{{ role }}</option>
+          {% endfor %}
       </select>
-
       <label for="state">State:</label>
       <select id="state" name="state" required>
+        <!-- List of states -->
         <option value="" disabled selected>Select your state</option>
         <option value="Abia">Abia</option>
+        <option value="Abia">Abuja</option>
         <option value="Adamawa">Adamawa</option>
         <option value="Akwa Ibom">Akwa Ibom</option>
         <option value="Anambra">Anambra</option>
@@ -82,6 +75,7 @@
         <option value="Taraba">Taraba</option>
         <option value="Yobe">Yobe</option>
         <option value="Zamfara">Zamfara</option>
+        <!-- Add more states here -->
       </select>
 
       <label for="lga">Local Government Area (LGA):</label>
@@ -117,12 +111,13 @@
           <option value="+31">+31 (Netherlands)</option>
           <option value="+81">+81 (Japan)</option>
           <option value="+47">+47 (Norway)</option>
+          <!-- Add more country codes if needed -->
         </select>
-        <input type="tel" id="phone" name="phone" placeholder="Enter the rest 10-digit of your phone number. eg. 8160052390" pattern="[0-9]{10}" required title="Please enter exactly 11 digits" maxlength="11">
+        <input type="tel" id="phone" name="phone" placeholder="Enter the rest of your phone number" pattern="[0-9]{10}" required maxlength="11">
       </div>
 
       <label for="email">Email Address:</label>
-      <input type="email" id="email" name="email" placeholder="Enter email address eg. johnmark@gmail.com" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address">
+      <input type="email" id="email" name="email" placeholder="Enter email address" required>
 
       <label for="address">Address:</label>
       <textarea id="address" name="address" placeholder="Enter address" required></textarea>
@@ -130,10 +125,10 @@
       <label for="occupation">Current Occupation:</label>
       <input type="text" id="occupation" name="occupation" placeholder="Enter occupation" required>
 
-      <label for="cv">Upload CV:</label>
+      <label for="cv">Upload CV (Accepted formats: .pdf, .doc, .docx, Max size: 2MB):</label>
       <input type="file" id="cv" name="cv" accept=".pdf,.doc,.docx" required>
 
-      <label for="coverLetter">Upload Cover Letter:</label>
+      <label for="coverLetter">Upload Cover Letter (Accepted formats: .pdf, .doc, .docx, Max size: 2MB):</label>
       <input type="file" id="coverLetter" name="coverLetter" accept=".pdf,.doc,.docx" required>
 
       <button type="submit">Submit</button>
@@ -147,7 +142,25 @@
     </div>
     {% endif %}
 
-   
   </div>
+
+  <script>
+    // Wait for the DOM to fully load before executing the script
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('toggleStatusForm');
+        const roleSelect = document.getElementById('role');
+        const submitButton = document.getElementById('submitButton');
+
+        roleSelect.addEventListener('change', function() {
+            // Get the selected role ID
+            const selectedRoleId = roleSelect.value;
+            
+            // Set the action dynamically to include the role_id
+            if (selectedRoleId) {
+                form.action = `/admin/toggle_status/${selectedRoleId}`;
+            }
+        });
+    });
+</script>
 </body>
 </html>
