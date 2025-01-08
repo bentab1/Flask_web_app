@@ -43,7 +43,10 @@ ROLE_OPEN_STATUS = {
     'Agent': True,
     'Sales': False,
     'Customer Care': True,
-    'Finance': False
+    'Finance': False,
+    'Cooperate Lawyer': True,
+    'Frontend Software developer': True,
+    'backend Software developer': True
 }
 
 class AccessCode(db.Model):
@@ -328,8 +331,7 @@ def login():
             return redirect(url_for('admin_panel'))
         flash('Invalid credentials', 'danger')
     return render_template('login.html')
-
-#session timing
+# Session timing
 @app.before_request
 def check_session_timeout():
     # Ignore session checks for static files and non-authenticated routes
@@ -347,13 +349,14 @@ def check_session_timeout():
         # Ensure both datetimes are naive or aware
         now = datetime.now().astimezone(last_activity.tzinfo) if last_activity.tzinfo else datetime.now()
         
-        if (now - last_activity).total_seconds() > 15:  # 20 seconds timeout
-            session.pop('is_admin', None)  # Log out the admin
+        if (now - last_activity).total_seconds() > 30:  # 15 seconds timeout
+            session.clear()  # Clear the entire session to avoid residual data
             flash("Session timed out due to inactivity. Please log in again.", "danger")
             return redirect(url_for('login'))  # Redirect to login page
     
     # Update the last activity timestamp for the session
     session['last_activity'] = datetime.now().isoformat()  # Save as ISO format string
+
 
 #logout route
 @app.route('/logout')

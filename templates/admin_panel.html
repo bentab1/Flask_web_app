@@ -95,12 +95,12 @@
         </tbody>
       </table>
     </section>
+    <!-- Logout Button -->
+  <form action="{{ url_for('logout') }}" method="GET" style="text-align: right;">
+    <button type="submit" class="logout-btn">Logout</button>
+  </form>
   </div>
-  <!-- Logout Button -->
-<form action="{{ url_for('logout') }}" method="GET" style="text-align: right;">
-  <button type="submit" class="btn btn-danger">Logout</button>
-</form>
-
+  
   <script>
     document.querySelectorAll('.toggle-btn').forEach(button => {
       button.addEventListener('click', function(e) {
