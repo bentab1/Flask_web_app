@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import os
+import pytz
 from werkzeug.utils import secure_filename
 from flask_migrate import Migrate
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -35,6 +36,10 @@ db = SQLAlchemy(app)
 
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
+# Set the Nigerian timezone (West Africa Time)
+nigerian_tz = pytz.timezone('Africa/Lagos')
+
+
 
 # Default status values (These can be updated by admin in the backend)
 FORM_OPEN = True  # True if form is open, False if closed
@@ -75,6 +80,8 @@ class Applicants(db.Model):
     occupation = db.Column(db.String(100), nullable=False)
     cv_file = db.Column(db.String(200), nullable=False)
     cover_letter_file = db.Column(db.String(200), nullable=False)
+    # Create the model field with the Nigerian time zone
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(nigerian_tz))  # New field for date and time
 
     def __repr__(self):
         return f'<Applicants {self.name}>'
