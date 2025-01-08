@@ -26,7 +26,7 @@
 
     <!-- Hide form if application is successful or already applied -->
     {% if not success and not already_applied %}
-    <form id="toggleStatusForm" action="{{ url_for('submit') }}" method="POST">
+    <form id="toggleStatusForm" action="{{ url_for('submit') }}" method="POST" enctype="multipart/form-data">
       <label for="role">Select the role/job you are applying for:</label>
       <select id="role" name="role" required>
           <option value="" disabled selected>Select role/job</option>
@@ -34,12 +34,13 @@
               <option value="{{ role }}">{{ role }}</option>
           {% endfor %}
       </select>
+
       <label for="state">State:</label>
       <select id="state" name="state" required>
-        <!-- List of states -->
         <option value="" disabled selected>Select your state</option>
+        <!-- List of states -->
         <option value="Abia">Abia</option>
-        <option value="Abia">Abuja</option>
+        <option value="Abuja">Abuja</option>
         <option value="Adamawa">Adamawa</option>
         <option value="Akwa Ibom">Akwa Ibom</option>
         <option value="Anambra">Anambra</option>
@@ -75,7 +76,6 @@
         <option value="Taraba">Taraba</option>
         <option value="Yobe">Yobe</option>
         <option value="Zamfara">Zamfara</option>
-        <!-- Add more states here -->
       </select>
 
       <label for="lga">Local Government Area (LGA):</label>
@@ -111,13 +111,12 @@
           <option value="+31">+31 (Netherlands)</option>
           <option value="+81">+81 (Japan)</option>
           <option value="+47">+47 (Norway)</option>
-          <!-- Add more country codes if needed -->
         </select>
-        <input type="tel" id="phone" name="phone" placeholder="Enter the rest of your phone number" pattern="[0-9]{10}" required maxlength="11">
+        <input type="tel" id="phone" name="phone" placeholder="Enter the rest 10-digit of your phone number. eg. 8160052390" pattern="[0-9]{10}" required title="Please enter exactly 11 digits" maxlength="11">
       </div>
 
       <label for="email">Email Address:</label>
-      <input type="email" id="email" name="email" placeholder="Enter email address" required>
+      <input type="email" id="email" name="email" placeholder="Enter email address eg. johnmark@gmail.com" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address">
 
       <label for="address">Address:</label>
       <textarea id="address" name="address" placeholder="Enter address" required></textarea>
@@ -131,6 +130,11 @@
       <label for="coverLetter">Upload Cover Letter (Accepted formats: .pdf, .doc, .docx, Max size: 2MB):</label>
       <input type="file" id="coverLetter" name="coverLetter" accept=".pdf,.doc,.docx" required>
 
+
+      <!-- Access Code Input -->
+      <label for="accesscode">Enter Access Code:</label>
+      <input type="text" id="accesscode" name="accesscode" placeholder="Enter access code" required>
+
       <button type="submit">Submit</button>
     </form>
     {% endif %}
@@ -141,15 +145,12 @@
       <p>You have already applied with this phone number or email.</p>
     </div>
     {% endif %}
-
   </div>
 
   <script>
     // Wait for the DOM to fully load before executing the script
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('toggleStatusForm');
         const roleSelect = document.getElementById('role');
-        const submitButton = document.getElementById('submitButton');
 
         roleSelect.addEventListener('change', function() {
             // Get the selected role ID
@@ -161,6 +162,6 @@
             }
         });
     });
-</script>
+  </script>
 </body>
 </html>
