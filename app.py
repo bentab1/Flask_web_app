@@ -24,7 +24,9 @@ app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx'}
 
 # Set maximum content length (2MB)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+# Set session lifetime (optional, ensures consistency)
 
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=20)
 # Secret key for session management (flash messages)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_default_secret_key')
 
@@ -224,7 +226,8 @@ def submit():
 
     return redirect(url_for('index', success=True))
 
-# Admin panel route
+
+#admin route to admin panel
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
 def admin_panel():
@@ -241,13 +244,13 @@ def admin_panel():
     # Convert ROLE_OPEN_STATUS dictionary to a list of roles with names and statuses
     roles = [{'id': role, 'name': role, 'status': 'active' if ROLE_OPEN_STATUS[role] else 'inactive'} for role in ROLE_OPEN_STATUS]
 
-    # Fetch access codes along with created_at field for display in admin panel
-    all_codes = AccessCode.query.order_by(AccessCode.expiration_date.desc()).all()
+    # Fetch the latest 3 access codes from the database
+    all_codes = AccessCode.query.order_by(AccessCode.created_at.desc()).limit(2).all()
 
     return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)
 
+
 # Admin route to generate access code
-# Route to handle form submission
 @app.route('/generate_code', methods=['GET', 'POST'])
 @admin_required
 def generate_code():
@@ -256,21 +259,45 @@ def generate_code():
         try:
             # Convert expiration date from string to datetime object
             expiration_date = datetime.strptime(expiration_date_str, '%Y-%m-%dT%H:%M')
-            generated_code = generate_random_code()
-            new_code = AccessCode(code=generated_code, expiration_date=expiration_date)
-            db.session.add(new_code)
+
+            # Check if the expiration date is in the future or now
+            if expiration_date < datetime.now():
+                flash("Can't generate past date, please enter now or future date.", "danger")
+                
+                # Fetch the roles and access codes here to render the admin panel correctly
+                roles = [{'id': role, 'name': role, 'status': 'active' if ROLE_OPEN_STATUS[role] else 'inactive'} for role in ROLE_OPEN_STATUS]
+                all_codes = AccessCode.query.order_by(AccessCode.expiration_date.desc()).limit(2).all()
+                
+                return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)  # Render admin panel with flash message
+
+            # Invalidate old codes by setting their expiration date to now
+            AccessCode.query.update({AccessCode.expiration_date: datetime.now()})
             db.session.commit()
-            
-            # Store generated code and formatted expiration date in session
-            session['generated_code'] = generated_code
-            session['expiration_date'] = expiration_date.strftime('%Y-%m-%dT%H:%M')  # Ensure correct format
 
-            flash("Access code generated successfully", "success")
+            # Generate and save the new code
+            new_code = generate_random_code()
+            new_access_code = AccessCode(code=new_code, expiration_date=expiration_date)
+            db.session.add(new_access_code)
+            db.session.commit()
+
+            # Store the newly generated code and expiration date in session
+            session['generated_code'] = new_code
+            session['expiration_date'] = expiration_date.strftime('%Y-%m-%d %H:%M')
+
+            flash("Access code generated successfully!", "success")
         except ValueError:
-            flash("Invalid expiration date format", "danger")
+            flash("Invalid expiration date format!", "danger")
+            
+            # Fetch the roles and access codes here to render the admin panel correctly
+            roles = [{'id': role, 'name': role, 'status': 'active' if ROLE_OPEN_STATUS[role] else 'inactive'} for role in ROLE_OPEN_STATUS]
+            all_codes = AccessCode.query.order_by(AccessCode.expiration_date.desc()).all()
 
-    all_codes = AccessCode.query.order_by(AccessCode.expiration_date.desc()).all()
-    return render_template('generate_code.html', all_codes=all_codes)
+            return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)  # Render admin panel with flash message
+
+        return redirect(url_for('admin_panel'))  # Redirect to admin panel after generating the code
+
+    return render_template('generate_code.html')  # Render the code generation form
+
 
 # Admin toggle role status route
 @app.route('/admin/toggle_status/<string:role_name>', methods=['POST'])
@@ -299,11 +326,38 @@ def login():
         flash('Invalid credentials', 'danger')
     return render_template('login.html')
 
-# Admin logout route
+#session timing
+@app.before_request
+def check_session_timeout():
+    # Ignore session checks for static files and non-authenticated routes
+    if request.endpoint in ['login', 'static'] or not session.get('is_admin'):
+        return
+    
+    # Check the last activity timestamp
+    if 'last_activity' in session:
+        last_activity = session['last_activity']
+        
+        # Convert `last_activity` to datetime object if it's stored as a string
+        if isinstance(last_activity, str):
+            last_activity = datetime.fromisoformat(last_activity)
+        
+        # Ensure both datetimes are naive or aware
+        now = datetime.now().astimezone(last_activity.tzinfo) if last_activity.tzinfo else datetime.now()
+        
+        if (now - last_activity).total_seconds() > 15:  # 20 seconds timeout
+            session.pop('is_admin', None)  # Log out the admin
+            flash("Session timed out due to inactivity. Please log in again.", "danger")
+            return redirect(url_for('login'))  # Redirect to login page
+    
+    # Update the last activity timestamp for the session
+    session['last_activity'] = datetime.now().isoformat()  # Save as ISO format string
+
+#logout route
 @app.route('/logout')
 def logout():
-    session.pop('is_admin', None)
-    return redirect(url_for('index'))
+    session.pop('is_admin', None)  # Remove admin session
+    flash("You have been logged out.", "info")  # Optional: Display a logout message
+    return redirect(url_for('login'))  # Redirect to the login page
 
 if __name__ == '__main__':
     app.run(debug=True)
