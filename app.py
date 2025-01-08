@@ -52,7 +52,7 @@ ROLE_OPEN_STATUS = {
 class AccessCode(db.Model):
     __tablename__ = 'access_codes'
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(255), nullable=False)
+    code = db.Column(db.Integer, nullable=False)
     expiration_date = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Created at field
 
@@ -104,9 +104,25 @@ def admin_required(f):
     return decorated_function
 
 # Function to generate a random access code
-def generate_random_code(length=10):
-    characters = string.ascii_letters + string.digits
-    return ''.join(random.choice(characters) for _ in range(length))
+def generate_random_code(length=6):
+    """
+    Generate a random integer code with the specified number of digits.
+    
+    Args:
+        length (int): The number of digits in the generated code.
+
+    Returns:
+        int: A random integer code.
+    """
+    if length < 1:
+        raise ValueError("Length must be at least 1")
+    
+    # Generate a random integer with the specified number of digits
+    start = 6 ** (length - 1)  # Smallest number with the specified length
+    end = (6 ** length) - 1   # Largest number with the specified length
+    
+    return random.randint(start, end)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -268,17 +284,13 @@ def generate_code():
 
             # Check if the expiration date is in the future or now
             if expiration_date < datetime.now():
-                flash("Can't generate past date, please enter now or future date.", "danger")
-                
-                # Fetch the roles and access codes here to render the admin panel correctly
+                flash("Can't generate past date. Please enter the current or a future date.", "danger")
+
+                # Fetch the roles and access codes to render the admin panel correctly
                 roles = [{'id': role, 'name': role, 'status': 'active' if ROLE_OPEN_STATUS[role] else 'inactive'} for role in ROLE_OPEN_STATUS]
                 all_codes = AccessCode.query.order_by(AccessCode.expiration_date.desc()).limit(2).all()
-                
-                return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)  # Render admin panel with flash message
 
-            # Invalidate old codes by setting their expiration date to now
-            AccessCode.query.update({AccessCode.expiration_date: datetime.now()})
-            db.session.commit()
+                return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)
 
             # Generate and save the new code
             new_code = generate_random_code()
@@ -286,23 +298,30 @@ def generate_code():
             db.session.add(new_access_code)
             db.session.commit()
 
+            # Invalidate old codes by setting their expiration date to now
+            AccessCode.query.filter(AccessCode.code != new_code).update(
+                {AccessCode.expiration_date: datetime.now()}
+            )
+            db.session.commit()
+
             # Store the newly generated code and expiration date in session
             session['generated_code'] = new_code
             session['expiration_date'] = expiration_date.strftime('%Y-%m-%d %H:%M')
 
-            flash("Access code generated successfully!", "success")
+            flash("Access code generated successfully! Existing codes have been invalidated.", "success")
         except ValueError:
             flash("Invalid expiration date format!", "danger")
-            
-            # Fetch the roles and access codes here to render the admin panel correctly
+
+            # Fetch the roles and access codes to render the admin panel correctly
             roles = [{'id': role, 'name': role, 'status': 'active' if ROLE_OPEN_STATUS[role] else 'inactive'} for role in ROLE_OPEN_STATUS]
             all_codes = AccessCode.query.order_by(AccessCode.expiration_date.desc()).all()
 
-            return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)  # Render admin panel with flash message
+            return render_template('admin_panel.html', form_open=FORM_OPEN, roles=roles, all_codes=all_codes)
 
         return redirect(url_for('admin_panel'))  # Redirect to admin panel after generating the code
 
     return render_template('generate_code.html')  # Render the code generation form
+
 
 
 # Admin toggle role status route
