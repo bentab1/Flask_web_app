@@ -1,0 +1,14 @@
+
+# #random gen
+# def generate_random_code(length=10):
+#     characters = string.ascii_letters + string.digits
+#     return ''.join(random.choice(characters) for _ in range(length))
+
+
+
+
+
+# #from db model
+# code = db.Column(db.String(255), nullable=False)
+
+#note, I also have to change the data typy in the db
