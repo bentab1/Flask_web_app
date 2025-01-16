@@ -99,7 +99,7 @@
              <td>{{ file.filename }}</td>
              <td>{{ file.uploaded_at }}</td>
              <td>
-                 <a href="{{ url_for('download_file', filename=file.filename) }}">Download</a> |
+              <a href="{{ url_for('download_file', file_type_name=file.file_type_name, filename=file.filename) }}">Download</a>|
                  <!-- Form to trigger DELETE request -->
                  <form action="{{ url_for('delete_file', file_id=file.id) }}" method="POST" style="display:inline;">
                   <input type="submit" value="Delete" onclick="return confirm('Are you sure you want to delete this file?');" style="color: white; background-color: red; border: none; padding: 5px 10px; cursor: pointer;">
